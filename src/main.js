@@ -10,7 +10,11 @@ import 'vant/lib/index.css'
 import 'amfe-flexible'
 // 覆盖vant的样式
 import '@/styles/index.less'
+// 引入自定义插件
+import myPlugin from '@/utils/plugin'
+
 Vue.use(Vant)
+Vue.use(myPlugin)
 Vue.config.productionTip = false
 
 new Vue({
