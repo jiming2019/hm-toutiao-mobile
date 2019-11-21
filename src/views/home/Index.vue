@@ -1,11 +1,11 @@
 <template>
   <div class="container">
-     <!-- tab容器  swipeable 允许手势滑动 -->
-    <van-tabs swipeable>
+     <!-- tab容器  swipeable 允许手势滑动 :lazy-render="false"关闭懒加载,自己实现加载-->
+    <van-tabs swipeable animated v-model="activeIndex" :lazy-render="false" @change="changeChannel">
       <!-- 选项卡 + 对应的内容 -->
-      <van-tab v-model="activeIndex" :key="item.id" v-for="item in myChannels" :title="item.name">
+      <van-tab :key="item.id" v-for="item in myChannels" :title="item.name">
         <!-- 文章列表（滚动容器） -->
-        <div class="scroll-wrapper">
+        <div class="scroll-wrapper" @scroll="remember($event)" ref="scroll-wrapper">
           <van-pull-refresh
             v-model="activeChannel.downLoading"
             @refresh="onRefresh"
@@ -16,18 +16,18 @@
                 <div class="article_item">
                   <h3 class="van-ellipsis">{{item.title}}</h3>
                   <div class="img_box" v-if="item.cover.type===3">
-                    <van-image class="w33" fit="cover" :src="item.cover.images[0]" />
-                    <van-image class="w33" fit="cover" :src="item.cover.images[1]" />
-                    <van-image class="w33" fit="cover" :src="item.cover.images[2]" />
+                    <van-image lazy-load class="w33" fit="cover" :src="item.cover.images[0]" />
+                    <van-image lazy-load class="w33" fit="cover" :src="item.cover.images[1]" />
+                    <van-image lazy-loadclass="w33" fit="cover" :src="item.cover.images[2]" />
                   </div>
                   <div class="img_box" v-if="item.cover.type===1">
-                    <van-image class="w100" fit="cover" :src="item.cover.images[0]" />
+                    <van-image lazy-load class="w100" fit="cover" :src="item.cover.images[0]" />
                   </div>
                   <div class="info_box">
                     <span>{{item.aut_name}}</span>
                     <span>{{item.comm_count}}评论</span>
-                    <span>{{item.pubdate}}</span>
-                    <span class="close">
+                    <span>{{item.pubdate | realTime}}</span>
+                    <span class="close" @click="openMoreAction(item.art_id.toString())" v-if="user.token">
                       <van-icon name="cross"></van-icon>
                     </span>
                   </div>
@@ -38,17 +38,30 @@
         </div>
       </van-tab>
     </van-tabs>
-    <span class="bar_btn" slot="nav-right">
+    <!-- 频道按钮 -->
+    <span class="bar_btn" slot="nav-right" @click="openChannelEdit">
       <van-icon name="wap-nav"></van-icon>
     </span>
+    <!-- 使用组件：更多操作 -->
+    <more-action v-if="user.token" v-model="showMoreAction" :articleId="articleId" @on-dislikes="removeArticle" @on-report="removeArticle"></more-action>
+    <!-- 使用频道编辑组件 原来的传值方式:activeIndex="activeIndex" @update="activeIndex=$event" 改为:activeIndex.sync="activeIndex"-->
+    <!-- 1. 如果一个组件显示多个数据的双向绑定  v-model 不够使用 -->
+    <!-- 2. vue提供 sync修饰符  双向数据绑定（同步父组件和子组件数据） -->
+    <!-- 3. 绑定属性  :attrName.sync="数据"  触发事件 $emit('update:attrName',数据) -->
+    <channel-edit v-model="showChannelEdit" :myChannels="myChannels" :activeIndex.sync="activeIndex"></channel-edit>
   </div>
 </template>
 
 <script>
 import { getMyChannels } from '@/api/channel'
 import { getArticles } from '@/api/article'
+import { mapState } from 'vuex'
+import MoreAction from './components/MoreAction'
+import ChannelEdit from './components/channel-edit'
+
 export default {
   name: 'home-index',
+  components: { MoreAction, ChannelEdit },
   data () {
     return {
       // 是否是加载中状态
@@ -63,36 +76,66 @@ export default {
       // 刷新完成的提示  文案（暂无更新|更新成功）
       refreshSuccessText: '',
       // 当前激活的频道索引
-      activeIndex: 0
+      activeIndex: 0,
+      // 显示更多操作
+      showMoreAction: false,
+      // 记录当前点击文章ID
+      articleId: null,
+      // 控制频道编辑组件显示隐藏
+      showChannelEdit: false
+
     }
   },
 
   created () {
+    // 获取频道数据
     this.getMyChannels()
+  },
+  // 激活组件钩子（组件缓存） 初始化组件也会执行
+  activated () {
+    // 当前激活的频道的文章列表容器 scroll-wrapper 滚动之前记录的位置
+    // scroll-wrapper 有几个频道就有几个容器 是一个数组[dom,dam,。。。]
+    if (this.$refs['scroll-wrapper']) {
+      const dom = this.$refs['scroll-wrapper'][this.activeIndex]
+      dom.scrollTop = this.activeChannel.scrollTop
+    }
   },
   computed: {
     // 当前频道
     activeChannel () {
       return this.myChannels[this.activeIndex]
+    },
+    ...mapState(['user'])
+  },
+  watch: {
+    user () {
+      // 更新当前频道 (默认激活推荐)
+      this.activeIndex = 0
+      this.getMyChannels()
+      this.onLoad()
     }
   },
-
   methods: {
     // 获取频道列表
     async getMyChannels () {
       const data = await getMyChannels()
       // 目前 myChannels： 频道id  频道名称
       // 扩展 myChannels： 频道id  频道名称  +文章列表 +加载中 +刷新中 +是否全部加载 +时间戳
-      this.myChannels = data.channels.map(item => {
-        return {
-          id: item.id,
-          name: item.name,
-          articles: [],
-          upLoading: false,
-          downLoading: false,
-          finished: false,
-          timestamp: Date.now()
-        }
+      this.myChannels = [] // 清除tabs组件的缓存
+      this.$nextTick(() => {
+        this.myChannels = data.channels.map(item => {
+          return {
+            id: item.id,
+            name: item.name,
+            articles: [],
+            upLoading: false,
+            downLoading: false,
+            finished: false,
+            timestamp: Date.now(),
+            // 记录阅读位置
+            scrollTop: 0
+          }
+        })
       })
     },
     // 上拉加载
@@ -167,6 +210,48 @@ export default {
       } else {
         this.refreshSuccessText = '暂无更新'
       }
+    },
+
+    // 切换频道
+    changeChannel () {
+      // 当前频道下无文章数据，自己主动加载一次数据
+      if (!this.activeChannel.articles.length) {
+        // 显示加载中效果
+        this.activeChannel.upLoading = true
+        this.onLoad()
+      } else {
+        // vue项目中  使用 $nextTick() 下一帧
+        // 情况1：当你同时操作dom时候，前面的操作效果生效
+        // 情况2：当你修改数据驱动视图更新（慢）,后面操作dom可能失败
+        this.$nextTick(() => {
+          const dom = this.$refs['scroll-wrapper'][this.activeIndex]
+          dom.scrollTop = this.activeChannel.scrollTop
+        })
+      }
+    },
+
+    // 记住滚动位置
+    remember (e) {
+      // 给当前频道记录阅读位置
+      this.activeChannel.scrollTop = e.target.scrollTop
+    },
+    // 打开更多操作对话框
+    openMoreAction (articleId) {
+      this.showMoreAction = true
+      // 记录文章Id
+      this.articleId = articleId
+    },
+
+    // 删除文章
+    removeArticle () {
+      const articles = this.activeChannel.articles
+      const index = articles.findIndex(item => item.art_id.toString() === this.articleId)
+      articles.splice(index, 1)
+    },
+
+    // 打开编辑频道
+    openChannelEdit () {
+      this.showChannelEdit = true
     }
 
   }

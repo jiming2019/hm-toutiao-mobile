@@ -5,7 +5,10 @@
     <!-- 内容容器 -->
     <div class="my-wrapper">
       <!-- 二级路由容器 -->
-      <router-view></router-view>
+      <keep-alive>
+        <router-view v-if="$route.meta.keepAlive"></router-view>
+      </keep-alive>
+      <router-view v-if="!$route.meta.keepAlive"></router-view>
     </div>
     <!-- tab栏 -->
     <van-tabbar route>

@@ -19,8 +19,8 @@ const routes = [
   {
     path: '/',
     component: Layout,
-    children: [
-      { path: '/', name: 'home', component: Home },
+    children: [ // keepAlive: true 用来判断组件是否缓存的标识
+      { path: '/', name: 'home', component: Home, meta: { keepAlive: true } },
       { path: '/question', name: 'question', component: Question },
       { path: '/video', name: 'video', component: Video },
       { path: '/user', name: 'user', component: User }
@@ -31,7 +31,7 @@ const routes = [
   { path: '/login', name: 'login', component: Login },
   { path: '/search', name: 'search', component: Search },
   { path: '/search/result', name: 'search-result', component: SearchResult },
-  { path: '/article', name: 'article', component: Article }
+  { path: '/article', name: 'article', component: Article, meta: { keepAlive: true } }
 ]
 
 const router = new VueRouter({
