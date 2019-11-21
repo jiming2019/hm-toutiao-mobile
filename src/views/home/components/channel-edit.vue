@@ -16,7 +16,7 @@
       <van-grid class="van-hairline--left">
         <van-grid-item v-for="(item,index) in myChannels" :key="item.id">
           <span class="f12" :class="{red:activeIndex===index}" @click="enterChannel(index)">{{item.name}}</span>
-          <van-icon v-show="editing && index!==0" class="btn" name="cross"></van-icon>
+          <van-icon @click="delChannel(item.id,index)" v-show="editing && index!==0" class="btn" name="cross"></van-icon>
         </van-grid-item>
       </van-grid>
     </div>
@@ -25,7 +25,7 @@
       <van-grid class="van-hairline--left">
         <van-grid-item v-for="item in optionalChannels" :key="item.id">
           <span class="f12">{{item.name}}</span>
-          <van-icon class="btn" name="plus"></van-icon>
+          <van-icon class="btn" name="plus" @click="addChannel(item)"></van-icon>
         </van-grid-item>
       </van-grid>
     </div>
@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import { getAllChannels } from '@/api/channel'
+import { getAllChannels, delChannel, addChannel } from '@/api/channel'
 export default {
   props: {
     // 控制显示与隐藏
@@ -93,6 +93,71 @@ export default {
       this.$emit('update:activeIndex', index)
       // 关闭对话框
       this.$emit('input', false)
+    },
+
+    // 删除频道  频道channelId 频道索引index
+    async delChannel (channelId, index) {
+      try {
+        // 1. 调用API来删除频道数据
+        await delChannel(channelId)
+        // 2. 提示
+        this.$toast.success('删除成功')
+        // 3. 当删除的索引 小于等于 当前激活频道的索引  让激活索引前移一位
+        if (index <= this.activeIndex) {
+          this.$emit('update:activeIndex', this.activeIndex - 1)
+        }
+        // 4. 删除组件依赖的我的频道数据 myChannels 中的索引对应的频道即可
+        // 4.1 props接收的数据特点是：只读（单向数据流）
+        // 4.2 如果是简单数据类型的父传子，是一定不能修改的
+        // 4.3 如果是复杂数据类型的父传子，在保证引用地址不变的情况下，允许修改（影响父组件）
+        // 总结：对应数组和对象，可以修改其中的值，不能重新赋值。
+        this.myChannels.splice(index, 1)
+      } catch (e) {
+        this.$toast.fail('删除失败')
+      }
+    },
+
+    // 添加频道
+    async addChannel ({ id, name }) {
+      try {
+      // 把接口需要的参数组织好
+      // 后台的请求需要：[{id,seq},...] 不包含推荐  seq 序号是从1开始
+      // 本地的添加需要：{id,name}  push即可
+      // 结论：需要上面两种数据API才能完成两种状态的业务，把数据合并
+      // 数据：[{id,name,seq},...]
+
+        // 得到有排序的数组
+        const orderChannels = this.myChannels.map((item, index) => {
+          return {
+            id: item.id,
+            name: item.name,
+            seq: index
+          }
+        })
+        // 追加一项
+        orderChannels.push({ id, name, seq: orderChannels.length })
+        // 删除推荐
+        orderChannels.shift()
+        // 调用添加的API添加
+        await addChannel(orderChannels)
+        // 提示成功
+        this.$toast.success('添加成功')
+        // 组件中的myChannels追加一项 组件渲染
+        this.myChannels.push({
+          id,
+          name,
+          articles: [],
+          upLoading: false,
+          downLoading: false,
+          finished: false,
+          timestamp: Date.now(),
+          // 阅读位置
+          scrollTop: 0
+
+        })
+      } catch (error) {
+        this.$toast.fail('添加失败')
+      }
     }
   }
 }
