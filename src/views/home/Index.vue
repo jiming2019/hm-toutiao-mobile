@@ -12,13 +12,13 @@
             :success-text="refreshSuccessText"
           >
             <van-list v-model="activeChannel.upLoading" :finished="activeChannel.finished" finished-text="没有更多了" @load="onLoad">
-              <van-cell v-for="item in activeChannel.articles" :key="item.art_id.toString()">
+              <van-cell :to="{name:'article',params:{id:item.art_id.toString()}}" v-for="item in activeChannel.articles" :key="item.art_id.toString()">
                 <div class="article_item">
                   <h3 class="van-ellipsis">{{item.title}}</h3>
                   <div class="img_box" v-if="item.cover.type===3">
                     <van-image lazy-load class="w33" fit="cover" :src="item.cover.images[0]" />
                     <van-image lazy-load class="w33" fit="cover" :src="item.cover.images[1]" />
-                    <van-image lazy-loadclass="w33" fit="cover" :src="item.cover.images[2]" />
+                    <van-image lazy-load class="w33" fit="cover" :src="item.cover.images[2]" />
                   </div>
                   <div class="img_box" v-if="item.cover.type===1">
                     <van-image lazy-load class="w100" fit="cover" :src="item.cover.images[0]" />
@@ -27,7 +27,7 @@
                     <span>{{item.aut_name}}</span>
                     <span>{{item.comm_count}}评论</span>
                     <span>{{item.pubdate | realTime}}</span>
-                    <span class="close" @click="openMoreAction(item.art_id.toString())" v-if="user.token">
+                    <span class="close" @click.stop="openMoreAction(item.art_id.toString())" v-if="user.token">
                       <van-icon name="cross"></van-icon>
                     </span>
                   </div>

@@ -64,7 +64,9 @@ instance.interceptors.response.use(res => {
     // 如果没有登录
     if (!user || !user.token || !user.refresh_token) {
       // 拦截到登录
-      return router.push(loginConfig)
+      // 响应拦截的error函数，必须返回一个错误的Promise对象，才认为是一个异常，阻止程序运行。
+      router.push(loginConfig)
+      return Promise.reject(error)
     }
 
     try {
@@ -96,7 +98,9 @@ instance.interceptors.response.use(res => {
       // 1. 删除token
       store.commit('delUser')
       // 2. 拦截登录
-      return router.push(loginConfig)
+      // 响应拦截的error函数，必须返回一个错误的Promise对象，才认为是一个异常，阻止程序运行。
+      router.push(loginConfig)
+      return Promise.reject(error)
     }
   }
   return Promise.reject(error)
