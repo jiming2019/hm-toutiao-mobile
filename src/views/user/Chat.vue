@@ -56,7 +56,7 @@ export default {
   beforeDestroy () {
     // this.socket.close()
     this.socketio.connected = false
-    console.log(this.socketio)
+    // console.log(this.socketio)
   },
   computed: {
     ...mapState(['photo', 'user'])

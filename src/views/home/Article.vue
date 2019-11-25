@@ -1,6 +1,6 @@
 <template>
   <div class='container' @scroll="remember($event)" ref="container">
-    <van-nav-bar fixed title="文章详情" left-arrow @click-left="$router.back()" />
+    <van-nav-bar fixed title="文章详情" left-arrow @click-left="$router.back()" right-text="分享" @click-right="share" />
     <!-- 文章详情容器 -->
     <div class="detail">
       <h3 class="title">{{article.title}}</h3>
@@ -123,6 +123,19 @@ export default {
         }
       }
     }
+
+    // 分享
+    // share () {
+    //   // 通过分享组件分享 App打包用
+    //   plus.share.sendWithSystem({
+    //     content: '分享内容',
+    //     href: 'http://www.dcloud.io/'
+    //   }, function () {
+    //     console.log('分享成功')
+    //   }, function (e) {
+    //     console.log('分享失败：' + JSON.stringify(e))
+    //   })
+    // }
   }
 }
 </script>
