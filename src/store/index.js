@@ -7,7 +7,9 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   state: {
     // 用户信息（包含token）
-    user: auth.getUser()
+    user: auth.getUser(),
+    // 头像
+    photo: null
   },
   mutations: {
     // 修改用户信息 user对象
@@ -21,7 +23,12 @@ export default new Vuex.Store({
     delUser (state) {
       state.user = {}
       auth.delUser()
+    },
+    // 修改头像 首页上传头像用
+    setPhoto (state, photo) {
+      state.photo = photo
     }
+
   },
   actions: {
   }

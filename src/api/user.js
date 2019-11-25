@@ -26,3 +26,35 @@ export const followed = (userId) => {
 export const unFollowed = (userId) => {
   return request(`/app/v1_0/user/followings/${userId}`, 'delete')
 }
+
+/**
+ * 获取个人中心用户信息
+ */
+export const getUserInfo = () => {
+  return request('/app/v1_0/user', 'get')
+}
+
+/**
+ * 获取编辑用户资料信息
+ */
+export const getUserProfile = () => {
+  return request(`/app/v1_0/user/profile`, 'get')
+}
+
+/**
+ * 上传头像
+ * @param {Obejct} formData - 上传对象（包含字段photo）
+ */
+export const saveUserPhoto = (formData) => {
+  return request('/app/v1_0/user/photo', 'patch', formData)
+}
+
+/**
+ * 保存信息
+ * @param {String} name
+ * @param {Integer} gender
+ * @param {String} birthday
+ */
+export const saveUserInfo = (name, gender = 0, birthday) => {
+  return request('/app/v1_0/user/profile', 'patch', { name, gender, birthday })
+}

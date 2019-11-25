@@ -22,7 +22,7 @@
     </van-list>
     <!-- 底部输入框 -->
     <div class="reply-container van-hairline--top">
-      <van-field v-model="value" placeholder="写评论...">
+      <van-field v-model="value" placeholder="写评论..." @keyup.enter="submit()">
         <van-loading v-if="submiting" slot="button" type="spinner" size="16px"></van-loading>
         <span class="submit" @click="submit()" v-else slot="button">提交</span>
       </van-field>

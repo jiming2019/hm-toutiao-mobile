@@ -1,9 +1,9 @@
 <template>
   <div class="container">
     <!-- 导航栏 -->
-    <van-nav-bar fixed title="黑马头条" right-text="搜索" @click-right="$router.push('/search')" />
+    <van-nav-bar v-if="path!=='/user'" fixed title="黑马头条" right-text="搜索" @click-right="$router.push('/search')" />
     <!-- 内容容器 -->
-    <div class="my-wrapper">
+    <div class="my-wrapper" :class="{noTop:path==='/user'}">
       <!-- 二级路由容器 -->
       <keep-alive>
         <router-view v-if="$route.meta.keepAlive"></router-view>
@@ -21,22 +21,29 @@
 </template>
 
 <script>
-export default {}
+export default {
+  name: 'layout',
+  computed: {
+    path () {
+      return this.$route.path
+    }
+  }
+}
 </script>
 
 <style scoped lang='less'>
-.container{
+.container {
   width: 100%;
   height: 100%;
   position: relative;
-  .my-wrapper{
+  .my-wrapper {
     width: 100%;
     height: 100%;
     overflow: hidden;
     padding-top: 46px;
     padding-bottom: 50px;
     box-sizing: border-box;
-    &.noTop{
+    &.noTop {
       padding-top: 0;
     }
   }
